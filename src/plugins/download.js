@@ -4,7 +4,7 @@
  * Download Tracking Plugin
  *
  * Copyright 2011, Cardinal Path and Direct Performance
- * Licensed under the MIT license.
+ * Licensed under the GPLv3 license.
  *
  * @author Eduardo Cereto <eduardocereto@gmail.com>
  */
@@ -41,33 +41,15 @@ function _checkFile(src, extensions) {
  * @param {Array|object} opts List of possible extensions for download
  * links.
  */
-function _trackDownloads(opts) {
+var _trackDownloads = function (opts) {
     var gh = this;
-    var links = document.getElementsByTagName('a');
-    for (var i = 0; i < links.length; i++) {
-        this._addEventListener(links[i], 'mousedown', function(e) {
-            if (e.target && e.target.tagName === 'A') {
-                var ext = _checkFile.call(gh,
-                    e.target.href, opts['extensions']
-                );
-                if (ext) {
-                    _gas.push(['_trackEvent',
-                        opts['category'], ext, e.target.href
-                    ]);
-                }
-            }
-        });
-    }
-}
 
-/**
- * GAA Hook, receive the extensions to extend default extensions. And trigger
- * the binding of the events.
- *
- * @param {string|Array|object} opts GAs Options. Also backward compatible
- * with array or string of extensions.
- */
-_gas.push(['_addHook', '_trackDownloads', function(opts) {
+    if (!gh._downloadTracked) {
+        gh._downloadTracked = true;
+    } else {
+        //Oops double tracking detected.
+        return;
+    }
     if (!opts) {
         opts = {'extensions': []};
     } else if (typeof opts === 'string') {
@@ -84,7 +66,31 @@ _gas.push(['_addHook', '_trackDownloads', function(opts) {
     ext = ext.split(',');
     opts['extensions'] = opts['extensions'].concat(ext);
 
-    _trackDownloads.call(this, opts);
+    gh._liveEvent('a', 'mousedown', function (e) {
+        var el = this;
+        if (el.href) {
+            var ext = _checkFile.call(gh,
+                el.href, opts['extensions']
+            );
+            if (ext) {
+                _gas.push(['_trackEvent',
+                    opts['category'], ext, el.href
+                ]);
+            }
+        }
+    });
     return false;
-}]);
+};
+
+/**
+ * GAA Hook, receive the extensions to extend default extensions. And trigger
+ * the binding of the events.
+ *
+ * @param {string|Array|object} opts GAs Options. Also backward compatible
+ * with array or string of extensions.
+ */
+_gas.push(['_addHook', '_gasTrackDownloads', _trackDownloads]);
+
+// Old API to be deprecated on v2.0
+_gas.push(['_addHook', '_trackDownloads', _trackDownloads]);
 

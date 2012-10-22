@@ -4,7 +4,7 @@
  * Outbound Link Tracking Plugin
  *
  * Copyright 2011, Cardinal Path and Direct Performance
- * Licensed under the MIT license.
+ * Licensed under the GPLv3 license.
  *
  * @author Eduardo Cereto <eduardocereto@gmail.com>
  */
@@ -15,39 +15,43 @@
  * @this {object} GA Helper object.
  * @param {object} opts Custom options for Outbound Links.
  */
-function _trackOutboundLinks(opts) {
+var _gasTrackOutboundLinks = function (opts) {
+    if (!this._outboundTracked) {
+        this._outboundTracked = true;
+    } else {
+        //Oops double tracking detected.
+        return;
+    }
+    var gh = this;
     if (!opts) {
         opts = {};
     }
     opts['category'] = opts['category'] || 'Outbound';
 
-    var links = document.getElementsByTagName('a');
-    for (var i = 0; i < links.length; i++) {
-        this._addEventListener(
-            links[i],
-            'mousedown',
-            function(e) {
-                var l = e.target;
-                if (
-                    (l.protocol == 'http:' || l.protocol == 'https:') &&
-                    sindexOf.call(l.href, document.location.hostname) === -1)
-                {
-                    var path = (l.pathname + l.search + ''),
-                        utm = sindexOf.call(path, '__utm');
-                    if (utm !== -1) {
-                        path = path.substring(0, utm);
-                    }
-                    _gas.push(['_trackEvent',
-                        opts['category'],
-                        l.hostname,
-                        path
-                    ]);
-                }
+    gh._liveEvent('a', 'mousedown', function (e) {
+        var l = this;
+        if (
+            (l.protocol === 'http:' || l.protocol === 'https:') &&
+            sindexOf.call(l.hostname, document.location.hostname) === -1)
+        {
+            var path = (l.pathname + l.search + ''),
+                utm = sindexOf.call(path, '__utm');
+            if (utm !== -1) {
+                path = path.substring(0, utm);
             }
-        );
-    }
-}
+            _gas.push(['_trackEvent',
+                opts['category'],
+                l.hostname,
+                path
+            ]);
+        }
 
-_gas.push(['_addHook', '_trackOutboundLinks', _trackOutboundLinks]);
+    });
+};
+
+_gas.push(['_addHook', '_gasTrackOutboundLinks', _gasTrackOutboundLinks]);
+
+// Old API to be deprecated on v2.0
+_gas.push(['_addHook', '_trackOutboundLinks', _gasTrackOutboundLinks]);
 
 
