@@ -4,83 +4,62 @@
  * YouTube Video Tracking Plugin
  *
  * Copyright 2011, Cardinal Path and Direct Performance
- * Licensed under the MIT license.
+ * Licensed under the GPLv3 license.
  *
  * @author Eduardo Cereto <eduardocereto@gmail.com>
  */
 
 /**
  * Array of percentage to fire events.
- *
  */
-var timeTriggers = [];
+var _ytTimeTriggers = [];
+var _ytOpts;
+
 
 /**
  * Used to map each vid to a set of timeTriggers and it's pool timer
  */
-var poolMaps = {}, curr_target, curr_hash;
+var _ytPoolMaps = {};
 
-function _ytStartPool(target) {
-    
-    if (timeTriggers && timeTriggers.length) {
-    	
-    	curr_target = target;
-    	
-        var h = target['getVideoData']()['video_id'];
-        
-        curr_hash = h;
-        
-        //console.log('CONFIG TIME TRIGGERS: ' + h);
-        
-        if (poolMaps[h]) {
-            _ytStopPool(target);
-        }else {
-            poolMaps[h] = {};
-            poolMaps[h].timeTriggers = slice.call(timeTriggers);
-        }
-        
-       poolMaps[h].timer = setTimeout(_ytPool, 1000);
-    }
-}
-
-function _ytPool() {
-	
-	
-	//console.log("yPOOL Target: " + curr_target);
-	//console.log("CHECK TIMER: " + poolMaps[curr_hash]);
-	
-    if (typeof(poolMaps[curr_hash]) == 'undefined' || poolMaps[curr_hash].timeTriggers.length <= 0) {
+function _ytPool(target, hash) {
+    if (_ytPoolMaps[hash] === undefined ||
+        _ytPoolMaps[hash].timeTriggers.length <= 0) {
         return false;
     }
-   
-    var p = curr_target['getCurrentTime']() / curr_target['getDuration']() * 100;
-    
-    //console.log("CURR TIME: " + p);
-    
-    if (p >= poolMaps[curr_hash].timeTriggers[0]) {
-        
-        var action = poolMaps[curr_hash].timeTriggers.shift();
-        
-        //console.log("MAP IT! " + action);
-        
+    var p = target['getCurrentTime']() / target['getDuration']() * 100;
+    if (p >= _ytPoolMaps[hash].timeTriggers[0]) {
+        var action = _ytPoolMaps[hash].timeTriggers.shift();
         _gas.push([
             '_trackEvent',
-            'YouTube Video',
+            _ytOpts['category'],
             action + '%',
-            curr_target['getVideoUrl']()
+            target['getVideoUrl']()
         ]);
     }
-    
-    poolMaps[curr_hash].timer = setTimeout(_ytPool, 1000);
+    _ytPoolMaps[hash].timer = setTimeout(_ytPool, 1000, target, hash);
 }
 
 function _ytStopPool(target) {
-    var h = target['getVideoData']()['video_id'];
-    if (poolMaps[h] && poolMaps[h].timer) {
+    var h = target['getVideoUrl']();
+    if (_ytPoolMaps[h] && _ytPoolMaps[h].timer) {
         _ytPool(target, h); // Pool one last time before clearing it.
-        clearTimeout(poolMaps[h].timer);
+        clearTimeout(_ytPoolMaps[h].timer);
     }
 }
+
+function _ytStartPool(target) {
+    if (_ytTimeTriggers && _ytTimeTriggers.length) {
+        var h = target['getVideoUrl']();
+        if (_ytPoolMaps[h]) {
+            _ytStopPool(target);
+        }else {
+            _ytPoolMaps[h] = {};
+            _ytPoolMaps[h].timeTriggers = slice.call(_ytTimeTriggers);
+        }
+        _ytPoolMaps[h].timer = setTimeout(_ytPool, 1000, target, h);
+    }
+}
+
 
 /**
  * Called when the Video State changes
@@ -89,33 +68,25 @@ function _ytStopPool(target) {
  *
  * @param {Object} event the event passed by the YT api.
  */
-
 function _ytStateChange(event) {
-    
-    //console.log('CHANGE STATE TO: ' + event['data']);
-    
     var action = '';
-    
     switch (event['data']) {
-        case 0:
-            action = 'finish';
-            _ytStopPool(event['target']);
-            break;
-        case 1:
-            action = 'play';
-            _ytStartPool(event['target']);
-            break;
-        case 2:
-            action = 'pause';
-            _ytStopPool(event['target']);
-            break;
+    case 0:
+        action = 'finish';
+        _ytStopPool(event['target']);
+        break;
+    case 1:
+        action = 'play';
+        _ytStartPool(event['target']);
+        break;
+    case 2:
+        action = 'pause';
+        _ytStopPool(event['target']);
+        break;
     }
     if (action) {
-    	
-    	//console.log('TrackYoutube #6: ' + action);
-    	
         _gas.push(['_trackEvent',
-            'YouTube Video', action, event['target']['getVideoUrl']()
+            _ytOpts['category'], action, event['target']['getVideoUrl']()
         ]);
     }
 }
@@ -125,10 +96,9 @@ function _ytStateChange(event) {
  *
  * @param {Object} event the event passed by the YT api.
  */
-
 function _ytError(event) {
     _gas.push(['_trackEvent',
-        'YouTube Video',
+        _ytOpts['category'],
         'error (' + event['data'] + ')',
         event['target']['getVideoUrl']()
     ]);
@@ -138,67 +108,27 @@ function _ytError(event) {
  * Looks for object/embed youtube videos and migrate them to the iframe method
  *  so it tries to track them
  */
-
 function _ytMigrateObjectEmbed() {
-	
-	////console.log('MIGRATE OBJECTS TO IFRAME');
-	
     var objs = document.getElementsByTagName('object');
     var pars, ifr, ytid;
-    var r = /(https?:\/\/www\.youtube(-nocookie)?\.com[^/]*).*\/v\/([^&?]+)/;
-    
-    for (var i = 0; i < objs.length; i++) { // OBJECT DIRECTLY INSERTED
-        
-        if(objs[i].data.indexOf('youtube')){
-        	// Replace the object with an iframe
-	         ytid = objs[i].data.match(r);
-	        
-	        if (ytid && ytid[1] && ytid[3]) {
-        	
-	            ifr = document.createElement('iframe');
-	            ifr.src = ytid[1] + '/embed/' + ytid[3] + '?enablejsapi=1';
-	            ifr.width = objs[i].width;
-	            ifr.height = objs[i].height;
-	            ifr.setAttribute('frameBorder', '0');
-	            ifr.setAttribute('allowfullscreen', '');
-	            
-	            objs[i].parentNode.insertBefore(ifr, objs[i]);
-	            objs[i].parentNode.removeChild(objs[i]);
-	           
-	            // Since we removed the object the Array changed
-	            i--;
-            
-            	//console.log('TrackYoutube #5: ' + ifr);
-           }
-        }
-         
+    var r = /(https?:\/\/www\.youtube(-nocookie)?\.com[^\/]*).*\/v\/([^&?]+)/;
+    for (var i = 0; i < objs.length; i++) {
         pars = objs[i].getElementsByTagName('param');
-        
         for (var j = 0; j < pars.length; j++) {
-        	
-        	//console.log('pars.name: ' + pars[j].name);
-        	//console.log('pars.value: ' + pars[j].value);
-        	
-            if (pars[j].name == 'movie' && pars[j].value) {
-            	                
+            if (pars[j].name === 'movie' && pars[j].value) {
                 // Replace the object with an iframe
                 ytid = pars[j].value.match(r);
-                
                 if (ytid && ytid[1] && ytid[3]) {
-                	
                     ifr = document.createElement('iframe');
                     ifr.src = ytid[1] + '/embed/' + ytid[3] + '?enablejsapi=1';
                     ifr.width = objs[i].width;
                     ifr.height = objs[i].height;
                     ifr.setAttribute('frameBorder', '0');
                     ifr.setAttribute('allowfullscreen', '');
-                    
                     objs[i].parentNode.insertBefore(ifr, objs[i]);
                     objs[i].parentNode.removeChild(objs[i]);
                     // Since we removed the object the Array changed
                     i--;
-                    
-                    //console.log('TrackYoutube #5: ' + ifr);
                 }
                 break;
             }
@@ -212,16 +142,11 @@ function _ytMigrateObjectEmbed() {
  * Only works for the iframe tag. The video must have the parameter
  * enablejsapi=1 on the url in order to make the tracking work.
  *
- * @param {(string|boolean)} force evaluates to true if we should force the
- * enablejsapi=1 parameter on the url to activate the api. May cause the player
- * to reload. Also converts object/embedded youtube videos to iframe.
- * @param {Array} opt_timeTriggers Array of integers from 0 to 100 that define
- * the steps to fire an event. eg: [25, 50, 75, 90].
+ * @param {(object)} opts GAS Options object.
  */
-function _trackYoutube(force, opt_timeTriggers) {
-	
-	//console.log('TrackYoutube #1');
-	
+function _trackYoutube(opts) {
+    var force = opts['force'];
+    var opt_timeTriggers = opts['percentages'];
     if (force) {
         try {
             _ytMigrateObjectEmbed();
@@ -234,83 +159,44 @@ function _trackYoutube(force, opt_timeTriggers) {
 
     var youtube_videos = [];
     var iframes = document.getElementsByTagName('iframe');
-    
-    //console.log('Iframes: ' + iframes.length);
-    
     for (var i = 0; i < iframes.length; i++) {
-        if (iframes[i].src.indexOf('//www.youtube.com/embed') > -1) { // Its a ytplayer
-        	
-        	//console.log('Iframes[ ' + i + ' ]' + 'IS A YOUTUBE VIDEO');
-        	
-            if (iframes[i].src.indexOf('enablejsapi=1') < 0) { // HASN´T GOT enabled JS API
+        if (sindexOf.call(iframes[i].src, '//www.youtube.com/embed') > -1) {
+            if (sindexOf.call(iframes[i].src, 'enablejsapi=1') < 0) {
                 if (force) {
                     // Reload the video enabling the api
-                    if (iframes[i].src.indexOf('?') < 0) {
+                    if (sindexOf.call(iframes[i].src, '?') < 0) {
                         iframes[i].src += '?enablejsapi=1';
-                    }else {
+                    } else {
                         iframes[i].src += '&enablejsapi=1';
                     }
-                }else {
+                } else {
                     // We can't track players that don't have api enabled.
                     continue;
                 }
             }
-            
             youtube_videos.push(iframes[i]);
-            //console.log("GOT NEW YOUTUBE PLAYER: " + iframes[i].src);
         }
     }
-    
-    //console.log("YOUTUBE VIDEOS CATCHED: " + youtube_videos.length);
-    
     if (youtube_videos.length > 0) {
-    	 
-    	//console.log('TrackYoutube IS > 0 ');
-    	 
         if (opt_timeTriggers && opt_timeTriggers.length) {
-            timeTriggers = opt_timeTriggers;
-            
-            //console.log('TrackYoutube TIMETRIGGERS: ' + timeTriggers);
+            _ytTimeTriggers = opt_timeTriggers;
         }
-        
-	    var p;
-	    
         // this function will be called when the youtube api loads
-        window['onYouTubePlayerAPIReady'] = function() {
-        	
-        	//console.log('TrackYoutube: ADD EVENT LISTENERS')
-
+        window['onYouTubePlayerAPIReady'] = function () {
+            var p;
             for (var i = 0; i < youtube_videos.length; i++) {
-            	
                 p = new window['YT']['Player'](youtube_videos[i]);
-                
-                if(p.addEventListener){
-                	
-                	p.addEventListener('onStateChange', '_ytStateChange');
-                	p.addEventListener('onError', '_ytError');
-                	
-                	//console.log('Event Listener Added: ' + p);
-                }
-                else if(p.attachEvent){
-                	
-                	 p.attachEvent('onStateChange', _ytStateChange);  
-                	 p.attachEvent('onError', _ytError);
-                	 
-                	 //console.log('Attach Event Added: ' + p);
-                }
+                p.addEventListener('onStateChange', _ytStateChange);
+                p.addEventListener('onError', _ytError);
             }
         };
-        
         // load the youtube player api
         var tag = document.createElement('script');
-        
         //XXX use document.location.protocol
-        
         var protocol = 'http:';
         if (document.location.protocol === 'https:') {
             protocol = 'https:';
         }
-        
         tag.src = protocol + '//www.youtube.com/player_api';
         tag.type = 'text/javascript';
         tag.async = true;
@@ -319,6 +205,30 @@ function _trackYoutube(force, opt_timeTriggers) {
     }
 }
 
-var arr_tempo = [5, 10, 20, 35, 40, 45, 50, 75, 90];
-window['_trackYoutube'] = _trackYoutube(true, arr_tempo);
+var _gasTrackYoutube = function (opts) {
+    // Support for legacy parameters
+    var args = slice.call(arguments);
+    if (args[0] && (typeof args[0] === 'boolean' || args[0] === 'force')) {
+        opts = {'force': !!args[0]};
+        if (args[1] && args[1].length) {
+            opts['percentages'] = args[1];
+        }
+    }
 
+    opts = opts || {};
+    opts['force'] = opts['force'] || false;
+    opts['category'] = opts['category'] || 'YouTube Video';
+    opts['percentages'] = opts['percentages'] || [];
+
+    _ytOpts = opts;
+    var gh = this;
+    gh._DOMReady(function () {
+        _trackYoutube.call(gh, opts);
+    });
+    return false;
+};
+
+_gas.push(['_addHook', '_gasTrackYoutube', _gasTrackYoutube]);
+
+// Old API to be deprecated on v2.0
+_gas.push(['_addHook', '_trackYoutube', _gasTrackYoutube]);

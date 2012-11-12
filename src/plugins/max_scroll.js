@@ -4,10 +4,12 @@
  * Max-Scroll Tracking Plugin
  *
  * Copyright 2011, Cardinal Path and Direct Performance
- * Licensed under the MIT license.
+ * Licensed under the GPLv3 license.
  *
  * @author Eduardo Cereto <eduardocereto@gmail.com>
  */
+
+var _maxScrollOpts;
 
 /**
  * Get current browser viewpane heigtht
@@ -64,7 +66,7 @@ function _update_scroll_percentage(now) {
         _max_scroll = Math.max(_get_scroll_percentage(), _max_scroll);
         return;
     }
-    _t = setTimeout(function() {
+    _t = setTimeout(function () {
         _max_scroll = Math.max(_get_scroll_percentage(), _max_scroll);
     }, 400);
 }
@@ -88,7 +90,6 @@ function _sendMaxScroll() {
     ]);
 }
 
-var _maxScrollOpts;
 /**
  * Tracks the max Scroll on the page.
  *
@@ -96,6 +97,12 @@ var _maxScrollOpts;
  * @this {GasHelper} The Ga Helper object
  */
 function _trackMaxScroll(opts) {
+    if (!this._maxScrollTracked) {
+        this._maxScrollTracked = true;
+    } else {
+        //Oops double tracking detected.
+        return;
+    }
     _maxScrollOpts = opts || {};
     _maxScrollOpts['category'] = _maxScrollOpts['category'] || 'Max Scroll';
 
@@ -103,5 +110,8 @@ function _trackMaxScroll(opts) {
     this._addEventListener(window, 'beforeunload', _sendMaxScroll);
 }
 
+_gas.push(['_addHook', '_gasTrackMaxScroll', _trackMaxScroll]);
+
+// Old API to be deprecated on v2.0
 _gas.push(['_addHook', '_trackMaxScroll', _trackMaxScroll]);
 

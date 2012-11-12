@@ -26,11 +26,11 @@
  *
  * @constructor
  */
-var GasHelper = function() {
+var GasHelper = function () {
     this._setDummyTracker();
 };
 
-GasHelper.prototype._setDummyTracker = function() {
+GasHelper.prototype._setDummyTracker = function () {
     if (!this['tracker']) {
         var trackers = window['_gat']['_getTrackers']();
         if (trackers.length > 0) {
@@ -46,7 +46,7 @@ GasHelper.prototype._setDummyTracker = function() {
  * @param {object} item Item to search form.
  * @return {boolean} true if contains.
  */
-GasHelper.prototype.inArray = function(obj, item) {
+GasHelper.prototype.inArray = function (obj, item) {
     if (obj && obj.length) {
         for (var i = 0; i < obj.length; i++) {
             if (obj[i] === item) {
@@ -64,7 +64,7 @@ GasHelper.prototype.inArray = function(obj, item) {
  * @param {boolean} strict_opt If we should remove any non ascii char.
  * @return {string} Sanitized string.
  */
-GasHelper.prototype._sanitizeString = function(str, strict_opt) {
+GasHelper.prototype._sanitizeString = function (str, strict_opt) {
     str = str.toLowerCase()
         .replace(/^\ +/, '')
         .replace(/\ +$/, '')
@@ -96,8 +96,8 @@ GasHelper.prototype._sanitizeString = function(str, strict_opt) {
  * it.
  * @return {boolean} true if it was successfuly binded.
  */
-GasHelper.prototype._addEventListener = function(obj, evt, ofnc, bubble) {
-    var fnc = function(event) {
+GasHelper.prototype._addEventListener = function (obj, evt, ofnc, bubble) {
+    var fnc = function (event) {
         if (!event || !event.target) {
             event = window.event;
             event.target = event.srcElement;
@@ -119,12 +119,12 @@ GasHelper.prototype._addEventListener = function(obj, evt, ofnc, bubble) {
         if (typeof obj[evt] === 'function') {
             // Object already has a function on traditional
             // Let's wrap it with our own function inside another function
-            fnc = (function(f1, f2) {
-                return function() {
+            fnc = (function (f1, f2) {
+                return function () {
                     f1.apply(this, arguments);
                     f2.apply(this, arguments);
-                }
-            })(obj[evt], fnc);
+                };
+            }(obj[evt], fnc));
         }
         obj[evt] = fnc;
         return true;
@@ -137,12 +137,12 @@ GasHelper.prototype._addEventListener = function(obj, evt, ofnc, bubble) {
  * Binds to the document root. Listens to all events of the specific type.
  * If event don't bubble it won't catch
  */
-GasHelper.prototype._liveEvent = function(tag, evt, ofunc) {
+GasHelper.prototype._liveEvent = function (tag, evt, ofunc) {
     var gh = this;
     tag = tag.toUpperCase();
     tag = tag.split(',');
 
-    gh._addEventListener(document, evt, function(me) {
+    gh._addEventListener(document, evt, function (me) {
         for (var el = me.target; el.nodeName !== 'HTML';
             el = el.parentNode)
         {
@@ -165,17 +165,16 @@ GasHelper.prototype._liveEvent = function(tag, evt, ofunc) {
  * @param {function(Event)} callback DOMReady callback.
  * @return {boolean} Ignore return value.
  */
-GasHelper.prototype._DOMReady = function(callback) {
+GasHelper.prototype._DOMReady = function (callback) {
     var scp = this;
-    if (/^(interactive|complete)/.test(document.readyState)) return cb();
-    this._addEventListener(document, 'DOMContentLoaded', cb, false);
-    this._addEventListener(window, 'load', cb, false);
-
     function cb() {
         if (cb.done) return;
         cb.done = true;
         callback.apply(scp, arguments);
     }
+    if (/^(interactive|complete)/.test(document.readyState)) return cb();
+    this._addEventListener(document, 'DOMContentLoaded', cb, false);
+    this._addEventListener(window, 'load', cb, false);
 };
 
 /**
@@ -219,7 +218,7 @@ var document = window.document,
  */
 function GAS() {
     var self = this;
-    self['version'] = '1.9';
+    self['version'] = '1.10.1';
     self._accounts = {};
     self._accounts_length = 0;
     self._queue = _prev_gas;
@@ -230,7 +229,7 @@ function GAS() {
     };
     // Need to be pushed to make sure tracker is done
     // Sets up helpers, very first thing pushed into gas
-    self.push(function() {
+    self.push(function () {
         self.gh = new GasHelper();
     });
 }
@@ -243,7 +242,7 @@ function GAS() {
  * @param {function()} cb The callback function to be appended to hooks.
  * @return {boolean} Always false.
  */
-GAS.prototype._addHook = function(fn, cb) {
+GAS.prototype._addHook = function (fn, cb) {
     if (typeof fn === 'string' && typeof cb === 'function') {
         if (typeof _gas._hooks[fn] === 'undefined') {
             _gas._hooks[fn] = [];
@@ -281,7 +280,7 @@ function _gaq_push(arr) {
  * This function should not be called directly. Instead use _gas.push
  * @return {number} This is the same return as _gaq.push calls.
  */
-GAS.prototype._execute = function() {
+GAS.prototype._execute = function () {
     var args = slice.call(arguments),
         self = this,
         sub = args.shift(),
@@ -291,21 +290,21 @@ GAS.prototype._execute = function() {
     if (typeof sub === 'function') {
         // Pushed functions are executed right away
         return _gaq_push(
-            (function(s, gh) {
-                return function() {
+            (function (s, gh) {
+                return function () {
                     // pushed functions receive helpers through this object
                     s.call(gh);
                 };
-            })(sub, self.gh)
+            }(sub, self.gh))
         );
 
-    }else if (typeof sub === 'object' && sub.length > 0) {
+    } else if (typeof sub === 'object' && sub.length > 0) {
         foo = sub.shift();
 
         if (sindexOf.call(foo, '.') >= 0) {
             acct_name = foo.split('.')[0];
             foo = foo.split('.')[1];
-        }else {
+        } else {
             acct_name = undefined;
         }
 
@@ -318,13 +317,13 @@ GAS.prototype._execute = function() {
                     if (repl_sub === false) {
                         // Returning false from a hook cancel the call
                         gaq_execute = false;
-                    }else {
+                    } else {
                         if (repl_sub && repl_sub.length > 0) {
                             // Returning an array changes the call parameters
                             sub = repl_sub;
                         }
                     }
-                }catch (e) {
+                } catch (e) {
                     if (foo !== '_trackException') {
                         self.push(['_trackException', e]);
                     }
@@ -339,7 +338,7 @@ GAS.prototype._execute = function() {
         if (foo === '_setAccount') {
 
             for (i in self._accounts) {
-                if (self._accounts[i] == sub[0]) {
+                if (self._accounts[i] === sub[0]) {
                     // Repeated account
                     if (acct_name === undefined) {
                         return 1;
@@ -349,8 +348,8 @@ GAS.prototype._execute = function() {
             acct_name = acct_name || '_gas' +
                 String(self._accounts_length + 1);
             // Force that the first unamed account is _gas1
-            if (typeof self._accounts['_gas1'] == 'undefined' &&
-                sindexOf.call(acct_name, '_gas') != -1) {
+            if (typeof self._accounts['_gas1'] === 'undefined' &&
+                sindexOf.call(acct_name, '_gas') !== -1) {
                 acct_name = '_gas1';
             }
             self._accounts[acct_name] = sub[0];
@@ -366,9 +365,8 @@ GAS.prototype._execute = function() {
         if (foo === '_link' || foo === '_linkByPost' || foo === '_require' ||
             foo === '_anonymizeIp')
         {
-            acc_foo = _build_acct_name(acct_name) + foo;
             args = slice.call(sub);
-            args.unshift(acc_foo);
+            args.unshift(foo);
             return _gaq_push(args);
         }
 
@@ -408,15 +406,15 @@ GAS.prototype._execute = function() {
  * ready for hooks. This creates _gaq as a series of functions that call
  * _gas._execute() with the same arguments.
  */
-GAS.prototype.push = function() {
+GAS.prototype.push = function () {
     var self = this;
     var args = slice.call(arguments);
     for (var i = 0; i < args.length; i++) {
-        (function(arr, self) {
-            window['_gaq'].push(function() {
+        (function (arr, self) {
+            window['_gaq'].push(function () {
                 self._execute.call(self, arr);
             });
-        })(args[i], self);
+        }(args[i], self));
     }
 };
 
@@ -435,7 +433,7 @@ window['_gas'] = _gas = new GAS();
  *
  * Watchout for circular calls
  */
-_gas.push(['_addHook', '_trackException', function(exception, message) {
+_gas.push(['_addHook', '_trackException', function (exception, message) {
     _gas.push(['_trackEvent',
         'Exception ' + (exception.name || 'Error'),
         message || exception.message || exception,
@@ -447,7 +445,7 @@ _gas.push(['_addHook', '_trackException', function(exception, message) {
 /**
  * Hook to enable Debug Mode
  */
-_gas.push(['_addHook', '_setDebug', function(set_debug) {
+_gas.push(['_addHook', '_setDebug', function (set_debug) {
     _gas.debug_mode = !!set_debug;
 }]);
 
@@ -459,7 +457,7 @@ _gas.push(['_addHook', '_setDebug', function(set_debug) {
  * @param {string} func _gas Function Name to remove Hooks from.
  * @return {boolean} Always returns false.
  */
-_gas.push(['_addHook', '_popHook', function(func) {
+_gas.push(['_addHook', '_popHook', function (func) {
     var arr = _gas._hooks[func];
     if (arr && arr.pop) {
         arr.pop();
@@ -472,7 +470,7 @@ _gas.push(['_addHook', '_popHook', function(func) {
  *
  * The default tracker is the nameless tracker that is pushed into _gaq_push
  */
-_gas.push(['_addHook', '_gasSetDefaultTracker', function(tname) {
+_gas.push(['_addHook', '_gasSetDefaultTracker', function (tname) {
     _gas._default_tracker = tname;
     return false;
 }]);
@@ -480,7 +478,7 @@ _gas.push(['_addHook', '_gasSetDefaultTracker', function(tname) {
  * This is kept just for backward compatibility since it's now supported
  * natively in _gaq.
  */
-_gas.push(['_addHook', '_trackPageview', function() {
+_gas.push(['_addHook', '_trackPageview', function () {
     var args = slice.call(arguments);
     if (args.length >= 2 &&
         typeof args[0] === 'string' && typeof args[1] === 'string')
@@ -536,12 +534,12 @@ function _checkFile(src, extensions) {
  * @param {Array|object} opts List of possible extensions for download
  * links.
  */
-var _trackDownloads = function(opts) {
+var _trackDownloads = function (opts) {
     var gh = this;
 
     if (!gh._downloadTracked) {
         gh._downloadTracked = true;
-    }else {
+    } else {
         //Oops double tracking detected.
         return;
     }
@@ -561,7 +559,7 @@ var _trackDownloads = function(opts) {
     ext = ext.split(',');
     opts['extensions'] = opts['extensions'].concat(ext);
 
-    gh._liveEvent('a', 'mousedown', function(e) {
+    gh._liveEvent('a', 'mousedown', function (e) {
         var el = this;
         if (el.href) {
             var ext = _checkFile.call(gh,
@@ -590,13 +588,77 @@ _gas.push(['_addHook', '_gasTrackDownloads', _trackDownloads]);
 _gas.push(['_addHook', '_trackDownloads', _trackDownloads]);
 
 /**
+ * GAS - Google Analytics on Steroids
+ *
+ * Ecommerce Meta
+ *
+ * Copyright 2012, Cardinal Path and Direct Performance
+ * Licensed under the GPLv3 license.
+ *
+ * @author Eduardo Cereto <eduardocereto@gmail.com>
+ */
+
+function _gasMetaEcommerce() {
+    var i, meta,
+        f_trans = 0,
+        f_item = 0,
+        metas = document.getElementsByTagName('meta');
+    for (i = 0; i < metas.length; i++) {
+        if (metas[i].name === 'ga_trans') {
+            // Fire transaction
+            meta = metas[i].content.split('^');
+            if (meta.length < 3) {
+                // 3 is the minimum for transaction
+                break;
+            }
+            // Add default values for remaining params
+            while (meta.length < 8) {
+                meta.push('');
+            }
+            _gas.push(['_addTrans',
+                    meta[0],
+                    meta[1],
+                    meta[2],
+                    meta[3],
+                    meta[4],
+                    meta[5],
+                    meta[6],
+                    meta[7]
+                    ]);
+            f_trans++;
+        }
+        else if (metas[i].name === 'ga_item') {
+            // Fire item
+            meta = metas[i].content.split('^');
+            if (meta.length === 6) {
+                _gas.push(['_addItem',
+                        meta[0],
+                        meta[1],
+                        meta[2],
+                        meta[3],
+                        meta[4],
+                        meta[5]
+                        ]);
+                f_item++;
+            }
+        }
+    }
+    if (f_trans > 0 && f_item > 0) {
+        _gas.push(['_trackTrans']);
+        //_gas.push(['_clearTrans']);
+    }
+}
+
+_gas.push(['_addHook', '_gasMetaEcommerce', _gasMetaEcommerce]);
+
+/**
  * Hook to sanity check trackEvents
  *
  * The value is rounded and parsed to integer.
  * Negative values are sent as zero.
  * If val is NaN than it is sent as zero.
  */
-_gas.push(['_addHook', '_trackEvent', function() {
+_gas.push(['_addHook', '_trackEvent', function () {
     var args = slice.call(arguments);
     if (args[3]) {
         args[3] = (args[3] < 0 ? 0 : Math.round(args[3])) || 0;
@@ -623,8 +685,8 @@ _gas.push(['_addHook', '_trackEvent', function() {
  */
 function getFormName(el) {
     while (el && el.nodeName !== 'HTML') {
-      if (el.nodeName === 'FORM') {break;}
-      el = el.parentNode;
+        if (el.nodeName === 'FORM') {break; }
+        el = el.parentNode;
     }
     if (el.nodeName === 'FORM') {
         return el.name || el.id || 'none';
@@ -632,10 +694,10 @@ function getFormName(el) {
     return 'none';
 }
 
-var _gasTrackForms = function(opts) {
+var _gasTrackForms = function (opts) {
     if (!this._formTracked) {
         this._formTracked = true;
-    }else {
+    } else {
         //Oops double tracking detected.
         return;
     }
@@ -648,7 +710,7 @@ var _gasTrackForms = function(opts) {
     opts['category'] = opts['category'] || 'Form Tracking';
     //opts['live'] = opts['live'] || true; //Ignored
 
-    var trackField = function(e) {
+    var trackField = function (e) {
         var el = e.target,
             el_name = el.name || el.id || el.type || el.nodeName,
             form_name = getFormName(el),
@@ -656,9 +718,9 @@ var _gasTrackForms = function(opts) {
             label = el_name + ' (' + e.type + ')';
 
         _gas.push(['_trackEvent', opts['category'], action, label]);
-    }
+    };
 
-    scp._DOMReady(function() {
+    scp._DOMReady(function () {
         var changeTags = ['input', 'select', 'textarea', 'hidden'];
         var submitTags = ['form'];
         var elements = [];
@@ -711,27 +773,27 @@ function _trackMediaElement(e) {
  * @param {String} tag Either 'audio' or 'video'.
  * @this {GasHelper} GA Helper object.
  */
-var _trackMedia = function(tag) {
+var _trackMedia = function (tag) {
     var self = this;
     self._liveEvent(tag, 'play', _trackMediaElement);
     self._liveEvent(tag, 'pause', _trackMediaElement);
     self._liveEvent(tag, 'ended', _trackMediaElement);
 };
 
-var _trackVideo = function() {
+var _trackVideo = function () {
     if (!this._videoTracked) {
         this._videoTracked = true;
-    }else {
+    } else {
         //Oops double tracking detected.
         return;
     }
     _trackMedia.call(this, 'video');
 };
 
-var _trackAudio = function() {
+var _trackAudio = function () {
     if (!this._audioTracked) {
         this._audioTracked = true;
-    }else {
+    } else {
         //Oops double tracking detected.
         return;
     }
@@ -748,6 +810,120 @@ _gas.push(['_addHook', '_trackAudio', _trackAudio]);
 /**
  * GAS - Google Analytics on Steroids
  *
+ * HTML Markup Plugin
+ *
+ * Copyright 2012, Cardinal Path and Direct Performance
+ * Licensed under the GPLv3 license.
+ *
+ * @author Eduardo Cereto <eduardocereto@gmail.com>
+ */
+
+/**
+ * Sets Default pagename and Custom Vars based on Meta
+ *
+ * If a meta name='ga_vpv' is availalbe on the page use that as a page
+ * replacement if the pageview is not passed as parameter.
+ *
+ * If meta name="ga_custom_var" the 4 values for a custom var must be on
+ * content separated by a caret (^).
+ */
+function _gasMeta() {
+    var i, meta,
+        metas = document.getElementsByTagName('meta');
+    for (i = 0; i < metas.length; i++) {
+        if (metas[i].name === 'ga_vpv') {
+            meta = metas[i].content;
+            (function (vpv) {
+                window._gas.push(['_addHook', '_trackPageview', function (p) {
+                    if (p === undefined) {
+                        return [vpv];
+                    }
+                }]);
+            }(meta));
+        } else if (metas[i].name === 'ga_custom_var') {
+            meta = metas[i].content.split('^');
+            if (meta.length === 4) {
+                window._gas.push(['_setCustomVar',
+                    parseInt(meta[0], 10),
+                    meta[1],
+                    meta[2],
+                    parseInt(meta[3], 10)
+                ]);
+            }
+        }
+    }
+}
+
+/**
+ * Listens to all clicks and looks for a tagged element on it.
+ *
+ * Events have the following params:
+ *   x-ga-event-category (required) – The category of the event specified in
+ * the solution design document
+ *   x-ga-event-action (required) – The action of the event specified in the
+ * solution design document
+ *   x-ga-event-label (optional) – The label of the event specified in the
+ * solution design document.  If no label is specified in the solution design
+ * document, this attribute can be omitted
+ *   x-ga-event-value (optional) – The value (integer) of the event specified
+ * in the solution design document.  If no value is specified in the solution
+ * design document, this attribute can be omitted
+ *   x-ga-event-noninteractive (optional) – Boolean (true/false) value
+ * specified in the solution design document.  If the non-interactive value is
+ * not specified, this attribute can be omitted
+ *
+ * Social Actions have the following params:
+ *   x-ga-social-network (required) – The network of the social interaction
+ * specified in the solution design document
+ *   x-ga-social-action (required) – The action of the social interaction
+ * specified in the solution design document
+ *   x-ga-social-target (optional) – The target of the social interaction
+ * specified in the solution design document.  If no target is specified, this
+ * attribute can be omitted
+ *   x-ga-social-pagepath (optional) – The page path of the social interaction
+ * specified in the solution design document.  If no page path is specified,
+ * this attribute can be omitted
+ */
+function _gasHTMLMarkup() {
+    var gh = this;
+
+    gh._addEventListener(document, 'mousedown', function (me) {
+        var el;
+        for (el = me.target; el.nodeName !== 'HTML';
+             el = el.parentNode) {
+            if (el.getAttribute('x-ga-event-category')) {
+                // Event element clicked, fire the _trackEvent
+                window._gas.push(['_trackEvent',
+                  el.getAttribute('x-ga-event-category'),
+                  el.getAttribute('x-ga-event-action'),
+                  el.getAttribute('x-ga-event-label') || undefined,
+                  parseInt(el.getAttribute('x-ga-event-value'), 10) || 0,
+                  el.getAttribute('x-ga-event-noninteractive') === 'true' ? true : false
+                ]);
+            }
+            if (el.getAttribute('x-ga-social-network')) {
+                // Social Action Clicked fire _trackSocial
+                window._gas.push(['_trackSocial',
+                  el.getAttribute('x-ga-social-network'),
+                  el.getAttribute('x-ga-social-action'),
+                  el.getAttribute('x-ga-social-target') || undefined,
+                  el.getAttribute('x-ga-social-pagepath') || undefined
+                ]);
+            }
+
+            if (el.parentNode === null) {
+                break;
+            }
+        }
+    }, true);
+}
+
+_gas.push(['_addHook', '_gasMeta', _gasMeta]);
+_gas.push(['_addHook', '_gasHTMLMarkup', _gasHTMLMarkup]);
+
+/**
+ * GAS - Google Analytics on Steroids
+ *
  * MailTo tracking plugin
  *
  * Copyright 2011, Cardinal Path and Direct Performance
@@ -759,10 +935,10 @@ _gas.push(['_addHook', '_trackAudio', _trackAudio]);
  *
  * @param {object} opts GAS Options.
  */
-var _gasTrackMailto = function(opts) {
+var _gasTrackMailto = function (opts) {
     if (!this._mailtoTracked) {
         this._mailtoTracked = true;
-    }else {
+    } else {
         //Oops double tracking detected.
         return;
     }
@@ -772,7 +948,7 @@ var _gasTrackMailto = function(opts) {
     }
     opts['category'] = opts['category'] || 'Mailto';
 
-    this._liveEvent('a', 'mousedown', function(e) {
+    this._liveEvent('a', 'mousedown', function (e) {
         var el = e.target;
         if (el && el.href && el.href.toLowerCase &&
           sindexOf.call(el.href.toLowerCase(), 'mailto:') === 0) {
@@ -796,6 +972,8 @@ _gas.push(['_addHook', '_trackMailto', _gasTrackMailto]);
  *
  * @author Eduardo Cereto <eduardocereto@gmail.com>
  */
+
+var _maxScrollOpts;
 
 /**
  * Get current browser viewpane heigtht
@@ -852,7 +1030,7 @@ function _update_scroll_percentage(now) {
         _max_scroll = Math.max(_get_scroll_percentage(), _max_scroll);
         return;
     }
-    _t = setTimeout(function() {
+    _t = setTimeout(function () {
         _max_scroll = Math.max(_get_scroll_percentage(), _max_scroll);
     }, 400);
 }
@@ -876,7 +1054,6 @@ function _sendMaxScroll() {
     ]);
 }
 
-var _maxScrollOpts;
 /**
  * Tracks the max Scroll on the page.
  *
@@ -886,7 +1063,7 @@ var _maxScrollOpts;
 function _trackMaxScroll(opts) {
     if (!this._maxScrollTracked) {
         this._maxScrollTracked = true;
-    }else {
+    } else {
         //Oops double tracking detected.
         return;
     }
@@ -924,14 +1101,14 @@ _gas._allowAnchor = false;
  * This stored value is used on _getLinkerUrl, _link and _linkByPost so it's
  * used the same by default
  */
-_gas.push(['_addHook', '_setAllowAnchor', function(val) {
+_gas.push(['_addHook', '_setAllowAnchor', function (val) {
     _gas._allowAnchor = !!val;
 }]);
 
 /**
  * _link Hook to use stored allowAnchor value.
  */
-_gas.push(['_addHook', '_link', function(url, use_anchor) {
+_gas.push(['_addHook', '_link', function (url, use_anchor) {
     if (use_anchor === undefined) {
         use_anchor = _gas._allowAnchor;
     }
@@ -941,7 +1118,7 @@ _gas.push(['_addHook', '_link', function(url, use_anchor) {
 /**
  * _linkByPost Hook to use stored allowAnchor value.
  */
-_gas.push(['_addHook', '_linkByPost', function(url, use_anchor) {
+_gas.push(['_addHook', '_linkByPost', function (url, use_anchor) {
     if (use_anchor === undefined) {
         use_anchor = _gas._allowAnchor;
     }
@@ -960,7 +1137,7 @@ var _external_domains = [];
  *
  * @type string
  */
-var _internal_domain = undefined;
+var _internal_domain;
 
 /**
  * _setDomainName Hook to add pushed domains to _external_domains if it doesn't
@@ -970,7 +1147,7 @@ var _internal_domain = undefined;
  * apply the one that matches the current domain and the other ones will be
  * used to track external domains with cookie data.
  */
-_gas.push(['_addHook', '_setDomainName', function(domainName) {
+_gas.push(['_addHook', '_setDomainName', function (domainName) {
     if (sindexOf.call('.' + document.location.hostname, domainName) < 0) {
         _external_domains.push(domainName);
         return false;
@@ -985,7 +1162,7 @@ _gas.push(['_addHook', '_setDomainName', function(domainName) {
  * domain are marked to send cookies.
  * You should use _setDomainName for this in most of the cases.
  */
-_gas.push(['_addHook', '_addExternalDomainName', function(domainName) {
+_gas.push(['_addHook', '_addExternalDomainName', function (domainName) {
     _external_domains.push(domainName);
     return false;
 }]);
@@ -1002,7 +1179,7 @@ _gas.push(['_addHook', '_addExternalDomainName', function(domainName) {
 function track_links(event_used) {
     if (!this._multidomainTracked) {
         this._multidomainTracked = true;
-    }else {
+    } else {
         //Oops double tracking detected.
         return;
     }
@@ -1017,7 +1194,7 @@ function track_links(event_used) {
         el = links[i];
         if (sindexOf.call(el.href, 'http') === 0) {
             // Check to see if it's a internal link
-            if (el.hostname == internal ||
+            if (el.hostname === internal ||
               sindexOf.call(el.hostname, _internal_domain) >= 0) {
                 continue;
             }
@@ -1029,20 +1206,28 @@ function track_links(event_used) {
                             el.href,
                             _gas._allowAnchor
                         );
-                    }else {
+                    } else {
                         if (event_used === 'click') {
-                            this._addEventListener(el, event_used, function(e) {
-                                _gas.push(
-                                    ['_link', this.href, _gas._allowAnchor]
-                                );
+                            this._addEventListener(el, event_used, function (e) {
+                                if (this.target && this.target === '_blank') {
+                                    window.open(
+                                        gh['tracker']['_getLinkerUrl'](
+                                            this.href, _gas._allowAnchor
+                                        )
+                                    );
+                                } else {
+                                    _gas.push(
+                                        ['_link', this.href, _gas._allowAnchor]
+                                    );
+                                }
                                 if (e.preventDefault)
                                     e.preventDefault();
                                 else
                                     e.returnValue = false;
                                 return false; //needed for ie7
                             });
-                        }else {
-                            this._addEventListener(el, event_used, function() {
+                        } else {
+                            this._addEventListener(el, event_used, function () {
                                 this.href = gh['tracker']['_getLinkerUrl'](
                                     this.href,
                                     _gas._allowAnchor
@@ -1057,12 +1242,14 @@ function track_links(event_used) {
     return false;
 }
 
-var _gasMultiDomain = function() {
+var _gasMultiDomain = function () {
     var gh = this;
     var args = slice.call(arguments);
-    gh._DOMReady(function() {
-        track_links.apply(gh, args);
-    });
+    if (gh && gh._DOMReady) {
+        gh._DOMReady(function () {
+            track_links.apply(gh, args);
+        });
+    }
 };
 
 /**
@@ -1090,10 +1277,10 @@ _gas.push(['_addHook', '_setMultiDomain', _gasMultiDomain]);
  * @this {object} GA Helper object.
  * @param {object} opts Custom options for Outbound Links.
  */
-var _gasTrackOutboundLinks = function(opts) {
+var _gasTrackOutboundLinks = function (opts) {
     if (!this._outboundTracked) {
         this._outboundTracked = true;
-    }else {
+    } else {
         //Oops double tracking detected.
         return;
     }
@@ -1103,10 +1290,10 @@ var _gasTrackOutboundLinks = function(opts) {
     }
     opts['category'] = opts['category'] || 'Outbound';
 
-    gh._liveEvent('a', 'mousedown', function(e) {
+    gh._liveEvent('a', 'mousedown', function (e) {
         var l = this;
         if (
-            (l.protocol == 'http:' || l.protocol == 'https:') &&
+            (l.protocol === 'http:' || l.protocol === 'https:') &&
             sindexOf.call(l.hostname, document.location.hostname) === -1)
         {
             var path = (l.pathname + l.search + ''),
@@ -1212,8 +1399,8 @@ function _vimeoPostMessageListener(event) {
         var data = JSON.parse(event.data);
         if (data.event === 'ready') {
             _trackVimeo.call(_gas.gh); // Force rerun since a player is ready
-        }else if (data.method) {
-            if (data.method == 'getVideoUrl') {
+        } else if (data.method) {
+            if (data.method === 'getVideoUrl') {
                 _vimeo_urls[data.player_id] = data.value;
             }
         } else if (data.event === 'playProgress') {
@@ -1254,11 +1441,11 @@ function _trackVimeo() {
                 if (force) {
                     // Reload the video enabling the api
                     player_src += separator + 'api=1&player_id=' + player_id;
-                }else {
+                } else {
                     // We won't track players that don't have api enabled.
                     continue;
                 }
-            }else {
+            } else {
                 if (sindexOf.call(player_src, 'player_id=') < -1) {
                     player_src += separator + 'player_id=' + player_id;
                 }
@@ -1290,7 +1477,7 @@ function _trackVimeo() {
     }
 }
 
-var _gasTrackVimeo = function(opts) {
+var _gasTrackVimeo = function (opts) {
     var gh = this;
     // Support
     if (typeof opts === 'boolean' || opts === 'force') {
@@ -1301,7 +1488,7 @@ var _gasTrackVimeo = function(opts) {
     opts['percentages'] = opts['percentages'] || [];
     opts['force'] = opts['force'] || false;
     _vimeoOpts = opts;
-    gh._DOMReady(function() {
+    gh._DOMReady(function () {
         _trackVimeo.call(gh);
     });
     return false;
@@ -1335,22 +1522,8 @@ var _ytOpts;
  */
 var _ytPoolMaps = {};
 
-
-function _ytStartPool(target) {
-    if (_ytTimeTriggers && _ytTimeTriggers.length) {
-        var h = target['getVideoData']()['video_id'];
-        if (_ytPoolMaps[h]) {
-            _ytStopPool(target);
-        }else {
-            _ytPoolMaps[h] = {};
-            _ytPoolMaps[h].timeTriggers = slice.call(_ytTimeTriggers);
-        }
-        _ytPoolMaps[h].timer = setTimeout(_ytPool, 1000, target, h);
-    }
-}
-
 function _ytPool(target, hash) {
-    if (_ytPoolMaps[hash] == undefined ||
+    if (_ytPoolMaps[hash] === undefined ||
         _ytPoolMaps[hash].timeTriggers.length <= 0) {
         return false;
     }
@@ -1368,12 +1541,26 @@ function _ytPool(target, hash) {
 }
 
 function _ytStopPool(target) {
-    var h = target['getVideoData']()['video_id'];
+    var h = target['getVideoUrl']();
     if (_ytPoolMaps[h] && _ytPoolMaps[h].timer) {
         _ytPool(target, h); // Pool one last time before clearing it.
         clearTimeout(_ytPoolMaps[h].timer);
     }
 }
+
+function _ytStartPool(target) {
+    if (_ytTimeTriggers && _ytTimeTriggers.length) {
+        var h = target['getVideoUrl']();
+        if (_ytPoolMaps[h]) {
+            _ytStopPool(target);
+        }else {
+            _ytPoolMaps[h] = {};
+            _ytPoolMaps[h].timeTriggers = slice.call(_ytTimeTriggers);
+        }
+        _ytPoolMaps[h].timer = setTimeout(_ytPool, 1000, target, h);
+    }
+}
+
 
 /**
  * Called when the Video State changes
@@ -1385,18 +1572,18 @@ function _ytStopPool(target) {
 function _ytStateChange(event) {
     var action = '';
     switch (event['data']) {
-        case 0:
-            action = 'finish';
-            _ytStopPool(event['target']);
-            break;
-        case 1:
-            action = 'play';
-            _ytStartPool(event['target']);
-            break;
-        case 2:
-            action = 'pause';
-            _ytStopPool(event['target']);
-            break;
+    case 0:
+        action = 'finish';
+        _ytStopPool(event['target']);
+        break;
+    case 1:
+        action = 'play';
+        _ytStartPool(event['target']);
+        break;
+    case 2:
+        action = 'pause';
+        _ytStopPool(event['target']);
+        break;
     }
     if (action) {
         _gas.push(['_trackEvent',
@@ -1425,11 +1612,11 @@ function _ytError(event) {
 function _ytMigrateObjectEmbed() {
     var objs = document.getElementsByTagName('object');
     var pars, ifr, ytid;
-    var r = /(https?:\/\/www\.youtube(-nocookie)?\.com[^/]*).*\/v\/([^&?]+)/;
+    var r = /(https?:\/\/www\.youtube(-nocookie)?\.com[^\/]*).*\/v\/([^&?]+)/;
     for (var i = 0; i < objs.length; i++) {
         pars = objs[i].getElementsByTagName('param');
         for (var j = 0; j < pars.length; j++) {
-            if (pars[j].name == 'movie' && pars[j].value) {
+            if (pars[j].name === 'movie' && pars[j].value) {
                 // Replace the object with an iframe
                 ytid = pars[j].value.match(r);
                 if (ytid && ytid[1] && ytid[3]) {
@@ -1480,10 +1667,10 @@ function _trackYoutube(opts) {
                     // Reload the video enabling the api
                     if (sindexOf.call(iframes[i].src, '?') < 0) {
                         iframes[i].src += '?enablejsapi=1';
-                    }else {
+                    } else {
                         iframes[i].src += '&enablejsapi=1';
                     }
-                }else {
+                } else {
                     // We can't track players that don't have api enabled.
                     continue;
                 }
@@ -1496,7 +1683,7 @@ function _trackYoutube(opts) {
             _ytTimeTriggers = opt_timeTriggers;
         }
         // this function will be called when the youtube api loads
-        window['onYouTubePlayerAPIReady'] = function() {
+        window['onYouTubePlayerAPIReady'] = function () {
             var p;
             for (var i = 0; i < youtube_videos.length; i++) {
                 p = new window['YT']['Player'](youtube_videos[i]);
@@ -1519,7 +1706,7 @@ function _trackYoutube(opts) {
     }
 }
 
-var _gasTrackYoutube = function(opts) {
+var _gasTrackYoutube = function (opts) {
     // Support for legacy parameters
     var args = slice.call(arguments);
     if (args[0] && (typeof args[0] === 'boolean' || args[0] === 'force')) {
@@ -1536,7 +1723,7 @@ var _gasTrackYoutube = function(opts) {
 
     _ytOpts = opts;
     var gh = this;
-    gh._DOMReady(function() {
+    gh._DOMReady(function () {
         _trackYoutube.call(gh, opts);
     });
     return false;
@@ -1557,19 +1744,19 @@ while (_gas._queue.length > 0) {
 
 // Import ga.js
 if (_gaq && _gaq.length >= 0) {
-    (function() {
+    (function () {
         var ga = document.createElement('script');
         ga.type = 'text/javascript';
         ga.async = true;
         ga.src = (
-            'https:' == document.location.protocol ?
+            'https:' === document.location.protocol ?
                 'https://ssl' :
                 'http://www'
         ) +
             '.google-analytics.com/ga.js';
         var s = document.getElementsByTagName('script')[0];
         s.parentNode.insertBefore(ga, s);
-    })();
+    }());
 }
 
 })(window);
