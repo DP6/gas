@@ -295,3 +295,22 @@ _gas.push(['_addHook', '_gasSetDefaultTracker', function (tname) {
     _gas._default_tracker = tname;
     return false;
 }]);
+
+/**
+ * Hook to Normalize the Custom Var Parameters
+ *
+ * It will remove any information after 127 characters on either the Name or the Value of the custom var
+ *
+ * @param {integer} Custom var Index
+ * @param {string} Custom var Name
+ * @param {string} Custom var Value
+ * @param {integer} Custom var Scope
+ * @return {boolean} Returns the parameters to the actual _setCustomVar
+ */
+_gas.push(['_addHook', '_setCustomVar', function(index, name, val, scope) {
+    index = parseInt(index, 10);
+    name = name.slice(127).toLowerCase();
+    val = val.slice(128 - name.length);
+    scope = parseInt(scope, 10);
+    return [index, name, val, scope];
+}]);
