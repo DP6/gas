@@ -309,8 +309,8 @@ _gas.push(['_addHook', '_gasSetDefaultTracker', function (tname) {
  */
 _gas.push(['_addHook', '_setCustomVar', function(index, name, val, scope) {
     index = parseInt(index, 10);
-    name = name.slice(127).toLowerCase();
-    val = val.slice(128 - name.length);
+    name = name.substr(0, 127).toLowerCase();
+    val = val.substr(0, 128 - name.length);
     scope = parseInt(scope, 10);
     return [index, name, val, scope];
 }]);
