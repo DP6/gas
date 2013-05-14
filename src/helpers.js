@@ -87,13 +87,27 @@ GasHelper.prototype._sanitizeString = function (str, strict_opt) {
  * @return {boolean} true if it was successfuly binded.
  */
 GasHelper.prototype._addEventListener = function (obj, evt, ofnc, bubble) {
-    var fnc = function (event) {
-        if (!event || !event.target) {
-            event = window.event;
-            event.target = event.srcElement;
+    var success,
+        gh = this,
+        fnc = function (event) {
+            if (!event || !event.target) {
+                event = window.event;
+                event.target = event.srcElement;
+            }
+            return ofnc.call(obj, event);
+        };
+    // Mobile abstraction
+    if (evt === 'tapmousedown') {
+        function tmp() {
+            var that = this;
+            if ((that['data-history'] = that['data-history'] || {timeout: 0, recent: false}).recent === true) return;
+            that['data-history'].recent = true;
+            that['data-history'].timeout = window.setTimeout(function(){ that['data-history'].recent = false; }, 50);
+            return fnc.apply(obj, arguments);
         }
-        return ofnc.call(obj, event);
-    };
+        success = gh._addEventListener(obj, 'tap', tmp, bubble);
+        return gh._addEventListener(obj, 'mousedown', tmp, bubble) || success;
+    }
     // W3C model
     if (obj.addEventListener) {
         obj.addEventListener(evt, fnc, !!bubble);
