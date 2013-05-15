@@ -67,20 +67,20 @@ function _trackDownloads(opts) {
  */
 _gas.push(['_addHook', '_trackDownloads', function(opts) {
     if (!opts) {
-        opts = {'extensions': []};
+        opts = {extensions: []};
     } else if (typeof opts === 'string') {
         // support legacy opts as String of extensions
-        opts = {'extensions': opts.split(',')};
+        opts = {extensions: opts.split(',')};
     } else if (opts.length >= 1) {
         // support legacy opts Array of extensions
-        opts = {'extensions': opts};
+        opts = {extensions: opts};
     }
-    opts['category'] = opts['category'] || 'Download';
+    opts.category = opts.category || 'Download';
 
     var ext = 'xls,xlsx,doc,docx,ppt,pptx,pdf,txt,zip';
     ext += ',rar,7z,exe,wma,mov,avi,wmv,mp3,csv,tsv';
     ext = ext.split(',');
-    opts['extensions'] = opts['extensions'].concat(ext);
+    opts.extensions = opts.extensions.concat(ext);
 
     _trackDownloads.call(this, opts);
     return false;

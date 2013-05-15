@@ -97,15 +97,40 @@ GasHelper.prototype._sanitizeString = function(str, strict_opt) {
  * @return {boolean} true if it was successfuly binded.
  */
 GasHelper.prototype._addEventListener = function(obj, evt, ofnc, bubble) {
-    var fnc = function(event) {
-        if (!event || !event.target) {
-            event = window.event;
-            event.target = event.srcElement;
-        }
-        return ofnc.call(obj, event);
-    };
+    var success, fnc = function(event) {
+            if (!event || !event.target) {
+                event = window.event;
+                event.target = event.srcElement;
+            }
+            return ofnc.call(obj, event);
+        };
+
+    if (evt.indexOf('+') > 0) {
+        (function(gh, arrevt) {
+            var tmpevt, tmpfnc, gashistory;
+
+            gashistory = 'data-gashistory';
+
+            tmpfnc = function tmpfnc() {
+                var obj = this, objevt;
+                obj[gashistory] = obj[gashistory] || {};
+                objevt = obj[gashistory][evt] = obj[gashistory][evt] || {recent: false, timeout: 0};
+                if (objevt.recent === true) return;
+
+                objevt.recent = true;
+                objevt.timeout = window.setTimeout(function(){ objevt.recent = false; }, 50);
+                return fnc.apply(obj, arguments);
+            }
+            
+            while (tmpevt = arrevt.shift()) {
+                success = gh._addEventListener(obj, tmpevt, tmpfnc, bubble) || success;
+            }
+        }(this, evt.split('+')))
+
+        return success;
+    }
     // W3C model
-    if (obj.addEventListener) {
+    else if (obj.addEventListener) {
         obj.addEventListener(evt, fnc, !!bubble);
         return true;
     }
